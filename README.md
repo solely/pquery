@@ -3,27 +3,29 @@
 
 ### 安装
 
-```bush
+```bash
 phpize
 ./configure
 make && make install
+echo 'pquery.so' > /path/php.ini
+service php-fpm restart
 ```
 
 ### 使用
-```bush 
+``` 
 目前，测试了 PHP7.1  PHP7.2，PHP5还未作测试，请谨慎使用。
 ```
 
 #### 相关API
 1、 void __construct( string $html);
 
-```bush
+```php
 在实例化 pquery 时自动调用， $html 可为空;
 ```
 
 2、 array getTitle( void);
 
-```bush
+```php
 获取 HTML 的 title标签 及其标签内文本内容;
 参数为空;
 返回数组，有两个键，一个键名为 count ： 匹配的次数, int 类型，这个数字不一定等于 data 数组元素和;
@@ -32,7 +34,7 @@ make && make install
 
 3、 array matchByTag( string $tag[, int $flag [, string $other_str]]);
 
-```bush
+```php
 匹配闭合 HTML 标签;
 参数： $tag : HTML 闭合标签
 $flag : 三个常量之一;
@@ -45,14 +47,14 @@ $other_str : 选填，根据自己的需要可以传入标志性字符串，或�
 
 4、 array matchByA([ int $flag [, string $other_str]]);
 
-```bush
+```php
 匹配 HTML A 标签;
 参数，返回结果 同上;
 ```
 
 5、 array getMetaByName( string $name);
 
-```bush
+```php
 获取 HTML meta标签;
 ```
 
