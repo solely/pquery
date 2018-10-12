@@ -97,14 +97,20 @@ $other_str : 选填，根据自己的需要可以传入标志性字符串，或�
 
 12、 object getItem( int $index);
 ```php
-获取某一个item，当调用了 select() 之后，此方法返回 $index 处 item 的 pquery 对象，否则返回 NULL
+获取某一个dom节点的item，当调用了 select() 之后，此方法返回 $index 处 item 的 pquery 对象，否则返回 NULL
 ```
 
 13、 int select( string $str);
 ```php
 同 find()，只是这个返回匹配的总个数;
+返回的结果大于等于0 ，其中 0，表示没有匹配
 ```
-
+14、 int getElementsByTagName( string $name);
+```php
+根据 HTML 标签名来获取;
+获取其中某一个dom需调用 getItem();
+返回的结果大于等于0 ，其中 0，表示没有匹配
+```
 #### demo实例
 demo.html
 ```html
@@ -371,12 +377,20 @@ php代码
          $video = $item->find("preload='auto'");
          if(!empty($video)){
              var_dump($video->getHtml()); //输出 video标签的HTML字符串
-             var_dump($video->getAttribute("src")); //获取 video 标签内的src属性值
-             var_dump($video->getTextContent()); //获取 video 标签的文本内容
+             if (!empty($video->getNode())){
+                var_dump($video->getAttribute("src")); //获取 video 标签内的src属性值
+                var_dump($video->getTextContent()); //获取 video 标签的文本内容
+             }
          }
+         $tags = $item->getElementsByTagName("h1");
+         if($tags > 0){                                                                                                                                                 
+             for($j = 0; $j < $tags; $j++){
+                var_dump($item->getItem($j)->getHtml());
+             }
+         }  
     }
 
     //链式调用
-    $text = $pquery->find("class='one'")->find("class='two'")->find("class='three'")->getTextContent();
+    $text = trim($pquery->find("class='one'")->find("class='two'")->find("class='three'")->getTextContent());
     var_dump($text); //输出 "这是 three"
 ```

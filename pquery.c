@@ -553,43 +553,57 @@ PHP_PQUERY_API zend_long pquery_dom_element(char *query_str, zval *html, zval *e
 	zend_string *dom_xpath__construct_method_str = zend_string_init(dom_xpath__construct, strlen(dom_xpath__construct), 0);
 	ZVAL_STR(&dom_xpath__construct_method, dom_xpath__construct_method_str);
 
-	if(ZVAL_IS_NULL(node)){
-		call_dom_name_str = zend_string_init(dom_name, strlen(dom_name), 0);
-		ZVAL_STR(&call_dom_name, call_dom_name_str);
-		zend_string *call_dom_method_load_html = zend_string_init(dom_method_load_html, strlen(dom_method_load_html), 0);
-		ZVAL_STR(&call_dom_method_load_html_name, call_dom_method_load_html);
-		zend_class_entry *dom_class = zend_lookup_class(call_dom_name_str);
+    zval _html;
+    if(!ZVAL_IS_NULL(node)){
+        zend_string *mbce_str = zend_string_init("mb_convert_encoding", strlen("mb_convert_encoding"), 0);
+        zend_string *html_entities = zend_string_init("HTML-ENTITIES", strlen("HTML-ENTITIES"), 0);
+        zend_string *utf8 = zend_string_init("UTF-8", strlen("UTF-8"), 0);
+        zval mbce_name, mbce_ret, mbce_params[3];
+        ZVAL_STR(&mbce_name, mbce_str);
+        ZVAL_STR(&mbce_params[0], zval_get_string(html));
+        ZVAL_STR(&mbce_params[1], html_entities);
+        ZVAL_STR(&mbce_params[2], utf8);
+        if(SUCCESS != call_user_function(EG(function_table), NULL, &mbce_name, &mbce_ret, 3, mbce_params)){
+            zend_string_release(mbce_str);
+            zend_string_release(html_entities);
+            zend_string_release(utf8);
+            php_error_docref(NULL, E_ERROR, "HTML encoding is not utf-8");
+        }
+        ZVAL_STR(&_html,Z_STR(mbce_ret));
+        zval_ptr_dtor(html);
+        zend_string_release(mbce_str);
+        zend_string_release(html_entities);
+        zend_string_release(utf8);
+    } else {
+        ZVAL_STR(&_html, Z_STR_P(html));
+    }
+    call_dom_name_str = zend_string_init(dom_name, strlen(dom_name), 0);
+    ZVAL_STR(&call_dom_name, call_dom_name_str);
+    zend_string *call_dom_method_load_html = zend_string_init(dom_method_load_html, strlen(dom_method_load_html), 0);
+    ZVAL_STR(&call_dom_method_load_html_name, call_dom_method_load_html);
+    zend_class_entry *dom_class = zend_lookup_class(call_dom_name_str);
 
-		object_init_ex(&call_dom_name, dom_class);
-		if(SUCCESS != call_user_function(zend_class_entry.function_table, &call_dom_name, &call_dom_method_load_html_name, &call_dom_ret, call_dom_param_cnt, html)){
-			zend_string_release(call_dom_name_str);
-			zend_string_release(call_dom_method_load_html);
-			zval_ptr_dtor(&call_dom_name);
-			php_error_docref(NULL, E_ERROR, "loadHTML call fails");
-		}
+    object_init_ex(&call_dom_name, dom_class);
+    if(SUCCESS != call_user_function(zend_class_entry.function_table, &call_dom_name, &call_dom_method_load_html_name, &call_dom_ret, call_dom_param_cnt, &_html)){
+        zend_string_release(call_dom_name_str);
+        zend_string_release(call_dom_method_load_html);
+        zval_ptr_dtor(&call_dom_name);
+        zval_ptr_dtor(&_html);
+        php_error_docref(NULL, E_ERROR, "loadHTML call fails");
+    }
 
-		zend_string_release(call_dom_name_str);
-		zend_string_release(call_dom_method_load_html);
-		if(SUCCESS != call_user_function(zend_class_entry.function_table, &dom_xpath_name, &dom_xpath__construct_method, &dom_xpath_ret,1,&call_dom_name)){
-			zend_string_release(libxml_use_internal_errors);
-			zval_ptr_dtor(&call_dom_name);
-			zend_string_release(dom_xpath_name_str);
-			zend_string_release(dom_xpath__construct_method_str);
-			zval_ptr_dtor(&dom_xpath_name);
-			php_error_docref(NULL, E_ERROR, "DOMXpath Initialization failed");
-		}
-		zval_ptr_dtor(&call_dom_name);
-	} else {
-		zval dom_document_rv;
-		zval *dom_document = zend_read_property(Z_OBJCE_P(node), node, "ownerDocument", sizeof("ownerDocument") - 1, 0, &dom_document_rv);
-		if(SUCCESS != call_user_function(zend_class_entry.function_table, &dom_xpath_name, &dom_xpath__construct_method, &dom_xpath_ret,1,dom_document)){
-			zend_string_release(libxml_use_internal_errors);
-			zend_string_release(dom_xpath_name_str);
-			zend_string_release(dom_xpath__construct_method_str);
-			zval_ptr_dtor(&dom_xpath_name);
-			php_error_docref(NULL, E_ERROR, "DOMXpath Initialization failed");
-		}
-	}
+    zval_ptr_dtor(&_html);
+    zend_string_release(call_dom_name_str);
+    zend_string_release(call_dom_method_load_html);
+    if(SUCCESS != call_user_function(zend_class_entry.function_table, &dom_xpath_name, &dom_xpath__construct_method, &dom_xpath_ret,1,&call_dom_name)){
+        zend_string_release(libxml_use_internal_errors);
+        zval_ptr_dtor(&call_dom_name);
+        zend_string_release(dom_xpath_name_str);
+        zend_string_release(dom_xpath__construct_method_str);
+        zval_ptr_dtor(&dom_xpath_name);
+        php_error_docref(NULL, E_ERROR, "DOMXpath Initialization failed");
+    }
+    zval_ptr_dtor(&call_dom_name);
 	zend_string_release(dom_xpath_name_str);
 	zend_string_release(dom_xpath__construct_method_str);
 
@@ -701,6 +715,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pquery_getItem, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pquery_select, 0, 0, 1)
+	ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pquery_getElementsByTagName, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
@@ -1087,6 +1105,45 @@ PHP_METHOD(pquery, select)
 	RETURN_LONG(length);
 }
 
+PHP_METHOD(pquery, getElementsByTagName)
+{
+	zend_string *name;
+	size_t name_len;
+	#ifndef FAST_ZPP
+		if(zend_parse_parameters(ZEND_NUM_ARGS(), "S", &name) == FAILURE){
+			return;
+		}
+	#else
+		ZEND_PARSE_PARAMETERS_START(1,1)
+			Z_PARAM_STR(name)
+		ZEND_PARSE_PARAMETERS_END();
+	#endif
+
+	zval *node = zend_read_property(pquery_ce,getThis(),PQUERY_PROPERTY_NODE, sizeof(PQUERY_PROPERTY_NODE) - 1, 0, NULL);
+	if(ZVAL_IS_NULL(node)){
+		zend_update_property_null(pquery_ce, getThis(), PQUERY_PROPERTY_NODELIST, sizeof(PQUERY_PROPERTY_NODELIST) - 1);
+		RETURN_LONG(0);
+	}
+
+	zval gebt_name, gebt_ret, gebt_params;
+	zend_string *gebt_name_str = zend_string_init("getElementsByTagName", sizeof("getElementsByTagName") - 1, 0);
+	ZVAL_STR(&gebt_name, gebt_name_str);
+	ZVAL_STR(&gebt_params, name);
+	if(SUCCESS != call_user_function(zend_class_entry.function_table, node, &gebt_name, &gebt_ret, 1, &gebt_params)){
+		zend_string_release(gebt_name_str);
+		php_error_docref(NULL, E_ERROR, "getElementsByTagName call fails");
+	}
+	zend_string_release(gebt_name_str);
+
+	zend_string *nodeList_length = zend_string_init("length", sizeof("length") - 1, 0);
+	zval length_ret;
+	zval *dom_nodeList_length = zend_read_property_ex(Z_OBJCE(gebt_ret),&gebt_ret, nodeList_length, 0, &length_ret);
+	zend_update_property(pquery_ce, getThis(), PQUERY_PROPERTY_NODELIST, sizeof(PQUERY_PROPERTY_NODELIST) - 1, &gebt_ret);
+	zval_ptr_dtor(&gebt_ret);
+	zend_string_release(nodeList_length);
+	RETURN_LONG(zval_get_long(dom_nodeList_length));
+}
+
 zend_function_entry pquery_methods[] = {
 	PHP_ME(pquery, __construct, arginfo_pquery_html, ZEND_ACC_PUBLIC)
 	PHP_ME(pquery, getTitle, NULL, ZEND_ACC_PUBLIC)
@@ -1101,6 +1158,7 @@ zend_function_entry pquery_methods[] = {
 	PHP_ME(pquery, getAttribute, arginfo_pquery_getAttribute, ZEND_ACC_PUBLIC)
 	PHP_ME(pquery, getItem, arginfo_pquery_getItem, ZEND_ACC_PUBLIC)
 	PHP_ME(pquery, select, arginfo_pquery_select, ZEND_ACC_PUBLIC)
+	PHP_ME(pquery, getElementsByTagName, arginfo_pquery_getElementsByTagName, ZEND_ACC_PUBLIC)
 	PHP_FE_END
 };
 
