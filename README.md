@@ -68,10 +68,11 @@ $other_str : 选填，根据自己的需要可以传入标志性字符串，或�
 返回 pquery 对象;
 ```
 
-7、 void setHtml( string $html);
+7、 object setHtml( string $html);
 ```php
 给 pquery 对象设置查找的 HTML 字符串;
 参数： $html : HTML字符串
+返回 pquery 对象;
 ```
 
 8、 string getHtml( void);
