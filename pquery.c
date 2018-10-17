@@ -867,21 +867,13 @@ PHP_METHOD(pquery, find)
 	zend_long length = pquery_dom_element(_name, html, &dom_ret, node);		
 	efree(_name);
 
-	if(length == -1){
+	if(length <= 0){
 		zval_ptr_dtor(&dom_ret);
 		RETURN_NULL();
 	}
 
 	zval self;
 	object_init_ex(&self,pquery_ce);
-	if(length == 0){
-		pquery_html = zend_string_init("",0,0);
-		zend_update_property_str(Z_OBJCE_P(&self),&self,PQUERY_PROPERTY_HTML, sizeof(PQUERY_PROPERTY_HTML) - 1, pquery_html);
-		zend_update_property_null(Z_OBJCE_P(&self), &self, PQUERY_PROPERTY_NODE, sizeof(PQUERY_PROPERTY_NODE) - 1);
-		zend_string_release(pquery_html);
-		zval_ptr_dtor(&dom_ret);
-		RETURN_ZVAL(&self, 1, 1);
-	}
 
 	zval dom_node_item_ret, dom_node_item_name, dom_node_item_params;
 	zend_string *dom_node_item_name_str = zend_string_init("item", strlen("item"), 0);
